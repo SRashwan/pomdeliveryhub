@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POM Executive Delivery Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        },
+                        accent: {
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f8fafc;
+            color: #0f172a;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .dark body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.2s;
+        }
+        
+        .dark .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-btn:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .active-doc {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25));
+            border-left: 4px solid #38bdf8;
+        }
+
+        /* Glow Elements */
+        .glow-text {
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        /* Document Typography Overrides */
+        .doc-content h1 { font-family: 'Space Grotesk'; font-size: 2rem; font-weight: 700; margin-bottom: 1.25rem; color: #0ea5e9; }
+        .doc-content h2 { font-family: 'Space Grotesk'; font-size: 1.35rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(148, 163, 184, 0.2); padding-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 0.85rem; line-height: 1.65; }
+        .doc-content ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
+        .doc-content li { margin-bottom: 0.4rem; }
+        
+        .doc-table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+        .doc-table th { background: rgba(99, 102, 241, 0.1); padding: 0.65rem; text-align: left; font-weight: 600; border-bottom: 2px solid rgba(99, 102, 241, 0.3); }
+        .doc-table td { padding: 0.65rem; border-bottom: 1px solid rgba(148, 163, 184, 0.2); vertical-align: top; }
+        .doc-table tr:hover td { background: rgba(255, 255, 255, 0.03); }
+        
+        .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.5rem; padding: 1.25rem; text-align: center; }
+        .stat-value { font-size: 2.25rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.25rem; font-family: 'Space Grotesk'; }
+
+        /* Custom Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+
+        /* Document Animations */
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(12px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Printing Layout Overrides */
+        @media print {
+            body { background: white !important; color: black !important; overflow: auto !important; }
+            #bg-canvas, header, aside, .h-14, .absolute, #theme-toggle, .no-print { display: none !important; }
+            main { padding: 0 !important; margin: 0 !important; display: block !important; }
+            section { border: none !important; box-shadow: none !important; background: transparent !important; }
+            .doc-content { max-width: 100% !important; }
+            .print-certificate-page { page-break-before: always; display: block !important; }
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen select-none md:select-text">
+
+    <!-- Dynamic Canvas Particle Field Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <header class="glass-panel w-full z-30 px-4 md:px-6 py-3 flex justify-between items-center relative shrink-0">
+        <div class="flex items-center gap-3">
+            <!-- Mobile Menu Toggle Button -->
+            <button id="mobile-menu-toggle" class="md:hidden glass-btn w-9 h-9 rounded-lg flex items-center justify-center text-xl">
+                <i class="ph ph-list"></i>
+            </button>
+            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-brand-400 to-accent-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                <i class="ph ph-rocket-launch text-white text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-md md:text-xl font-display font-bold tracking-tight">POM Executive <span class="glow-text">Delivery Hub</span></h1>
+                <p class="text-[10px] md:text-xs opacity-70 font-medium">By Sherif Rashwan &bull; June 2026</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2 md:gap-4">
+            <button onclick="openSignOffModal()" class="glass-btn px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center gap-2 bg-brand-500/10 text-brand-400 hover:text-white border-brand-500/30">
+                <i class="ph ph-signature font-bold"></i> <span class="hidden sm:inline">CEO Sign-Off</span>
+            </button>
+            <button id="theme-toggle" class="glass-btn w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center">
+                <i class="ph ph-sun text-md hidden dark:block text-yellow-300"></i>
+                <i class="ph ph-moon text-md block dark:hidden text-slate-700"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar Back Drop for Mobile Drawer -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity duration-300" onclick="toggleMobileSidebar(false)"></div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden p-3 md:p-4 gap-4 max-w-[1600px] w-full mx-auto relative z-20">
+        
+        <!-- Sidebar Navigation Drawer (Toggleable on Mobile) -->
+        <aside id="app-sidebar" class="fixed md:static inset-y-0 left-0 w-72 glass-panel rounded-r-2xl md:rounded-2xl flex flex-col overflow-hidden shrink-0 z-50 md:z-10 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="p-4 border-b border-white/10 flex items-center justify-between md:block">
+                <h2 class="text-xs uppercase tracking-wider font-bold opacity-50">Navigation Panel</h2>
+                <button class="md:hidden glass-btn w-8 h-8 rounded-lg flex items-center justify-center" onclick="toggleMobileSidebar(false)">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <!-- PDF Download Links (Verbatim References) -->
+            <div class="p-4 bg-brand-500/5 border-b border-white/10">
+                <h3 class="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-2">Original Document Archives</h3>
+                <div class="space-y-1.5 text-xs">
+                    <a href="presentation.pdf" download class="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 dark:hover:bg-brand-500/10 border border-white/5 transition-all group">
+                        <span class="flex items-center gap-2 truncate text-slate-300 group-hover:text-brand-400">
+                            <i class="ph ph-file-pdf text-red-400 text-base"></i> presentation.pdf
+                        </span>
+                        <i class="ph ph-download opacity-60 group-hover:opacity-100"></i>
+                    </a>
+                    <a href="schedule.pdf" download class="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 dark:hover:bg-accent-500/10 border border-white/5 transition-all group">
+                        <span class="flex items-center gap-2 truncate text-slate-300 group-hover:text-accent-400">
+                            <i class="ph ph-file-pdf text-red-400 text-base"></i> schedule.pdf
+                        </span>
+                        <i class="ph ph-download opacity-60 group-hover:opacity-100"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Document Selection Links -->
+            <div class="p-4 border-b border-white/10 space-y-2">
+                <h3 class="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-1">Select Document</h3>
+                <button id="btn-doc-presentation" class="w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-start gap-2.5 active-doc group" onclick="switchDocument('presentation')">
+                    <i class="ph ph-presentation-chart text-lg text-brand-400 mt-0.5"></i>
+                    <div>
+                        <div class="font-semibold text-xs group-hover:text-brand-400 transition-colors">Technical Delivery Plan</div>
+                        <div class="text-[9px] opacity-60">High-level Business Summary</div>
+                    </div>
+                </button>
+                
+                <button id="btn-doc-schedule" class="w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-start gap-2.5 glass-btn group" onclick="switchDocument('schedule')">
+                    <i class="ph ph-calendar-check text-lg text-accent-400 mt-0.5"></i>
+                    <div>
+                        <div class="font-semibold text-xs group-hover:text-accent-400 transition-colors">Detailed Schedule</div>
+                        <div class="text-[9px] opacity-60">Spiral Dev & Reporting Plan</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Table of Contents Section -->
+            <div class="p-4 flex-1 overflow-y-auto" id="toc-container">
+                <h2 class="text-xs uppercase tracking-wider font-bold opacity-50 mb-2">Table of Contents</h2>
+                <ul class="space-y-1.5 text-xs" id="toc-list">
+                    <!-- Dynamic TOC Content -->
+                </ul>
+            </div>
+            
+            <div class="p-4 border-t border-white/10 text-center">
+                <div class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20 text-[10px] font-medium w-full">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Operational Staging Active
+                </div>
+            </div>
+        </aside>
+
+        <!-- Document Viewer Area -->
+        <section class="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden relative">
+            
+            <!-- Viewer Toolbar -->
+            <div class="h-14 border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 bg-white/5 z-10">
+                <div class="flex items-center gap-2 max-w-[50%]">
+                    <span id="current-doc-title" class="font-display font-semibold text-xs md:text-sm truncate">Loading...</span>
+                </div>
+                <div class="flex items-center gap-2 md:gap-3">
+                    <button onclick="changePage(-1)" class="glass-btn w-8 h-8 rounded-lg flex items-center justify-center hover:text-brand-400 disabled:opacity-30" id="btn-prev">
+                        <i class="ph ph-caret-left"></i>
+                    </button>
+                    <span class="text-[10px] md:text-xs font-medium tracking-widest"><span id="page-num">1</span> / <span id="page-total">13</span></span>
+                    <button onclick="changePage(1)" class="glass-btn w-8 h-8 rounded-lg flex items-center justify-center hover:text-brand-400 disabled:opacity-30" id="btn-next">
+                        <i class="ph ph-caret-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Page Content Screen -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 relative" id="viewer-scroll-area">
+                <div class="max-w-4xl mx-auto doc-content animate-fade" id="page-content">
+                    <!-- Dynamically Injected Pages -->
+                </div>
+            </div>
+            
+            <!-- Horizontal Reader Progress Bar -->
+            <div class="h-1 w-full bg-white/10 absolute bottom-0 left-0">
+                <div class="h-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-300" id="read-progress" style="width: 10%;"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- CEO SIGN-OFF OVERLAY / MODAL -->
+    <div id="signoff-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-300">
+        <div class="glass-panel max-w-lg w-full rounded-2xl p-6 overflow-y-auto max-h-[90vh] border border-white/15 shadow-2xl relative animate-fade">
+            <button onclick="closeSignOffModal()" class="absolute top-4 right-4 glass-btn w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-white">
+                <i class="ph ph-x"></i>
+            </button>
+            
+            <h2 class="font-display font-bold text-2xl text-brand-400 mb-2 flex items-center gap-2">
+                <i class="ph ph-shield-check"></i> CEO Authorization Center
+            </h2>
+            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+                As Chief Executive Officer, please review the 7 operational decisions required to authorize the POM flexible 2-month delivery cadence.
+            </p>
+
+            <!-- Decison check boxes -->
+            <div class="space-y-3 mb-6 max-h-[40vh] overflow-y-auto pr-1" id="modal-decisions-list">
+                <!-- Checkboxes injected by JS -->
+            </div>
+
+            <!-- Validation/Instruction banner -->
+            <div id="signoff-validation-msg" class="hidden mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <i class="ph ph-warning-circle text-base"></i> Please verify and confirm all 7 points to complete authorization.
+            </div>
+
+            <!-- Signature inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-[10px] uppercase font-bold tracking-wider opacity-60 mb-1">CEO Signature Name</label>
+                    <input type="text" id="input-ceo-sig" placeholder="Type full name to sign" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500 transition-all">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase font-bold tracking-wider opacity-60 mb-1">Institution/Organization</label>
+                    <input type="text" id="input-ceo-org" value="POM Digital Ecosystem" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500 transition-all">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="processDigitalSignature()" class="flex-1 glass-btn bg-brand-500/20 text-brand-400 border-brand-500/30 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-brand-500/30 transition-all">
+                    <i class="ph ph-certificate"></i> Generate Official Sign-off Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINTABLE EXECUTIVE CONFIRMATION CERTIFICATE TEMPLATE (Hidden from normal UI view) -->
+    <div id="print-certificate-container" class="hidden print:block print-certificate-page p-12 text-black bg-white max-w-4xl mx-auto">
+        <div class="text-center border-b-4 border-black pb-6 mb-8">
+            <h1 class="text-3xl font-bold uppercase tracking-tight" style="font-family:'Space Grotesk';">POM Digital Ecosystem</h1>
+            <p class="text-sm font-semibold tracking-widest mt-1">EXECUTIVE AGREEMENT & OPERATIONAL STANDARDS</p>
+        </div>
+
+        <div class="my-6">
+            <h2 class="text-xl font-bold mb-3 border-b-2 border-black pb-1">OFFICIAL DELIVERY SIGN-OFF & DELEGATION</h2>
+            <p class="text-sm leading-relaxed mb-4">
+                This document provides formal operational clearance from the Chief Executive Officer regarding the scheduling, payment structures, meeting frequencies, and mitigation criteria established within the <strong>POM Technical Delivery Framework</strong>.
+            </p>
+            <p class="text-sm leading-relaxed mb-4">
+                By executive authorization of the signatory below, all operational workflows, sprint planning intervals, external costs exclusions, and client billing parameters outlined within the plan are ratified for deployment.
+            </p>
+        </div>
+
+        <div class="my-8">
+            <h3 class="font-bold text-sm mb-3">RATIFIED OPERATIONAL DECISIONS:</h3>
+            <ol class="list-decimal pl-5 space-y-2 text-xs" id="print-decisions-outcome">
+                <!-- Executed decisions checklist generated here -->
+            </ol>
+        </div>
+
+        <div class="grid grid-cols-2 gap-8 my-12 pt-8 border-t border-dashed border-gray-400">
+            <div>
+                <p class="text-xs uppercase font-semibold text-gray-500">Authorized Institution</p>
+                <p class="text-sm font-bold mt-1" id="print-organization-label">POM Digital Ecosystem</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase font-semibold text-gray-500">Security Verification Token</p>
+                <p class="text-[9px] font-mono mt-1 text-gray-600 break-all" id="print-verification-hash">POM-AUTH-X99...</p>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs uppercase font-semibold text-gray-500">Digital Signatory Authority</p>
+                <p class="text-xl font-bold mt-2" style="font-family: 'Brush Script MT', cursive;" id="print-signature-cursive">John Doe</p>
+                <p class="text-sm font-semibold border-t border-black pt-1 mt-1" id="print-signature-name">CEO Signatory</p>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs uppercase font-semibold text-gray-500">Execution Timestamp</p>
+                <p class="text-sm font-bold mt-2" id="print-timestamp-val">June 13, 2026</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-12 text-[10px] text-gray-500">
+            POM Tech Delivery System &bull; Confidential Boardroom Record &bull; Generated dynamically via authorized platform controls
+        </div>
+    </div>
+
+    <!-- Document Data & Logic -->
+    <script>
+        // System state management
+        const state = {
+            currentDocId: 'presentation',
+            currentPageIndex: 0,
+            sidebarOpen: false,
+            decisions: [false, false, false, false, false, false, false],
+            ceoSignature: "",
+            organization: "POM Digital Ecosystem",
+            signedAt: null,
+            isSigned: false
+        };
+
+        const decisionTexts = [
+            "Confirm the weekly schedule and no-Friday policy.",
+            "Confirm client meetings should stay inside the stated windows.",
+            "Confirm Saturday is only a replacement day for sickness, emergency, or delivery-critical recovery.",
+            "Confirm external infrastructure and AI-compute expenses are separate from the agreement.",
+            "Confirm future client/subsidiary work requires 20,000 EGP upfront and 20% on delivery.",
+            "Confirm smaller client projects must be batched to at least 30,000 EGP total before work begins.",
+            "Confirm meeting notes are the official record for decisions, owners, and scope changes."
+        ];
+
+        // --- Document Data Structures ---
+        const documents = {
+            presentation: {
+                title: "POM Technical Delivery Plan (Summary)",
+                pages: [
+                    {
+                        title: "Cover",
+                        html: `
+                            <div class="flex flex-col items-center justify-center text-center h-full min-h-[50vh] px-4">
+                                <div class="w-20 h-20 md:w-24 md:h-24 mb-6 md:mb-8 rounded-2xl bg-gradient-to-br from-brand-400 to-accent-600 flex items-center justify-center shadow-2xl shadow-brand-500/40">
+                                    <i class="ph ph-rocket-launch text-white text-4xl md:text-5xl"></i>
+                                </div>
+                                <h1 class="text-3xl md:text-5xl mb-4 font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">POM Technical Delivery Plan</h1>
+                                <p class="text-base md:text-xl opacity-80 mb-6 md:mb-8 font-light">Summary of Schedule, Delivery Rhythm, Risks, and Decisions</p>
+                                <div class="glass-btn px-4 py-2.5 md:px-6 md:py-3 rounded-full text-xs md:text-sm">
+                                    Prepared by <strong>Sherif Rashwan</strong> &bull; June 2026
+                                </div>
+                                <p class="mt-8 max-w-lg opacity-60 text-xs">This presentation translates the delivery document into clear business language for non-technical review.</p>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Executive Summary",
+                        html: `
+                            <h2>Executive Summary</h2>
+                            <p class="text-lg md:text-xl text-brand-500 font-medium mb-3">What this plan does</p>
+                            <p class="text-base md:text-lg">It creates a controlled two-month delivery model for the POM digital ecosystem without requiring daily work. The plan protects focus time, sets clear communication rules, and gives leadership measurable progress checkpoints.</p>
+                            <div class="mt-6 p-4 md:p-6 glass-btn rounded-xl border-l-4 border-l-accent-500">
+                                <ul class="space-y-3 mb-0 text-xs md:text-sm">
+                                    <li class="flex gap-3 items-start"><i class="ph ph-check-circle text-lg md:text-xl text-green-400 shrink-0"></i> <span>Work happens on three planned days per week: <strong>Sunday, Tuesday, and Thursday.</strong></span></li>
+                                    <li class="flex gap-3 items-start"><i class="ph ph-prohibit text-lg md:text-xl text-red-400 shrink-0"></i> <span><strong>Friday is fully unavailable</strong> for work, calls, meetings, or delivery commitments.</span></li>
+                                    <li class="flex gap-3 items-start"><i class="ph ph-shield-check text-lg md:text-xl text-brand-400 shrink-0"></i> <span>Off-days are protected, with only short emergency call windows where listed.</span></li>
+                                    <li class="flex gap-3 items-start"><i class="ph ph-file-code text-lg md:text-xl text-accent-400 shrink-0"></i> <span>Every active workday must produce visible evidence such as code, notes, tests, diagrams, or decisions.</span></li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Weekly Schedule",
+                        html: `
+                            <h2>Weekly Schedule at a Glance</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <table class="doc-table min-w-[600px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-1/4">Day</th>
+                                            <th class="w-1/3">Status</th>
+                                            <th>Business Meaning</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-semibold text-brand-400">Sunday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs mr-2">Active</span> 17:00 to 22:00</td>
+                                            <td>Prepare the sprint, organize priorities, clarify architecture, and remove blockers.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-slate-400">Monday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-slate-500/20 text-slate-400 rounded text-xs mr-2">Off</span> Calls 18:00 - 18:20</td>
+                                            <td>Protected day with one short urgent-call window only.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-brand-400">Tuesday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs mr-2">Active</span> 17:00 to 22:00</td>
+                                            <td>Main remote execution block for implementation, validation, and issue closure.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-slate-400">Wednesday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-slate-500/20 text-slate-400 rounded text-xs mr-2">Off</span> Calls 18:00 - 18:20</td>
+                                            <td>Protected day with one short blocker-resolution call window only.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-brand-400">Thursday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs mr-2">Active</span> 10:00 to 17:00</td>
+                                            <td>Main alignment day for planning, reviews, client sessions, and delivery decisions.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-red-400">Friday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs mr-2">Unavailable</span></td>
+                                            <td>No work, no calls, no meetings, no delivery obligations.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold text-yellow-400">Saturday</td>
+                                            <td><span class="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs mr-2">Off / Backup</span> Calls 13:00 - 13:20</td>
+                                            <td>Only replaces a missed active day for sickness, emergency, or delivery-critical recovery.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Why This Design?",
+                        html: `
+                            <h2>Why the Schedule Is Designed This Way</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div class="glass-panel p-5 rounded-xl">
+                                    <h3 class="font-bold text-brand-400 mb-3 text-base flex items-center gap-2"><i class="ph ph-briefcase text-lg"></i> Business Benefits</h3>
+                                    <ul class="space-y-2 text-xs md:text-sm">
+                                        <li class="flex items-center gap-2"><i class="ph ph-caret-right text-accent-400"></i> Fewer scattered meetings</li>
+                                        <li class="flex items-center gap-2"><i class="ph ph-caret-right text-accent-400"></i> Better focus during implementation</li>
+                                        <li class="flex items-center gap-2"><i class="ph ph-caret-right text-accent-400"></i> Clear delivery expectations</li>
+                                        <li class="flex items-center gap-2"><i class="ph ph-caret-right text-accent-400"></i> Lower risk of burnout</li>
+                                        <li class="flex items-center gap-2"><i class="ph ph-caret-right text-accent-400"></i> Easier weekly reporting</li>
+                                    </ul>
+                                </div>
+                                <div class="glass-panel p-5 rounded-xl relative overflow-hidden">
+                                    <div class="absolute top-0 right-0 p-4 opacity-5"><i class="ph ph-gear text-5xl"></i></div>
+                                    <h3 class="font-bold text-accent-400 mb-3 text-base flex items-center gap-2"><i class="ph ph-scales text-lg"></i> Operating Rule</h3>
+                                    <p class="leading-relaxed relative z-10 text-xs md:text-sm">
+                                        One active workday is followed by one protected off-day where possible. 
+                                        This creates a sustainable rhythm while preserving emergency coverage through short call windows and a Saturday replacement buffer.
+                                    </p>
+                                </div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Delivery Flow",
+                        html: `
+                            <h2>Simple Delivery Flow</h2>
+                            
+                            <div class="flex flex-wrap md:flex-nowrap justify-center md:justify-between items-center gap-4 my-6 relative">
+                                <div class="absolute top-1/2 left-0 w-full h-1 bg-white/10 -translate-y-1/2 hidden md:block z-0"></div>
+                                
+                                <div class="relative z-10 bg-[#0f172a] p-2 rounded-full border-2 border-brand-500 w-24 h-24 md:w-30 md:h-30 flex flex-col items-center justify-center text-center">
+                                    <i class="ph ph-map-trifold text-xl text-brand-400 mb-1"></i>
+                                    <span class="font-bold text-xs">Plan</span>
+                                </div>
+                                <div class="relative z-10 bg-[#0f172a] p-2 rounded-full border-2 border-accent-400 w-24 h-24 md:w-30 md:h-30 flex flex-col items-center justify-center text-center">
+                                    <i class="ph ph-code text-xl text-accent-400 mb-1"></i>
+                                    <span class="font-bold text-xs">Build</span>
+                                </div>
+                                <div class="relative z-10 bg-[#0f172a] p-2 rounded-full border-2 border-green-400 w-24 h-24 md:w-30 md:h-30 flex flex-col items-center justify-center text-center">
+                                    <i class="ph ph-check-square-offset text-xl text-green-400 mb-1"></i>
+                                    <span class="font-bold text-xs">Validate</span>
+                                </div>
+                                <div class="relative z-10 bg-[#0f172a] p-2 rounded-full border-2 border-purple-400 w-24 h-24 md:w-30 md:h-30 flex flex-col items-center justify-center text-center">
+                                    <i class="ph ph-chart-bar text-xl text-purple-400 mb-1"></i>
+                                    <span class="font-bold text-xs">Report</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs md:text-sm">
+                                <div class="p-3 bg-white/5 rounded-lg"><strong class="text-brand-400">Plan:</strong> Decide what matters most before implementation starts.</div>
+                                <div class="p-3 bg-white/5 rounded-lg"><strong class="text-accent-400">Build:</strong> Execute focused work during active delivery windows.</div>
+                                <div class="p-3 bg-white/5 rounded-lg"><strong class="text-green-400">Validate:</strong> Check that the work is usable, stable, and documented.</div>
+                                <div class="p-3 bg-white/5 rounded-lg"><strong class="text-purple-400">Report:</strong> Summarize progress, risks, decisions, and next actions.</div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "2-Month Roadmap",
+                        html: `
+                            <h2>Two-Month Roadmap in Business Terms</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <table class="doc-table min-w-[600px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-1/6">Weeks</th>
+                                            <th class="w-1/4">Focus</th>
+                                            <th>Expected Business Outcome</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-bold text-lg text-center border-r border-white/10">1 to 2</td>
+                                            <td class="font-semibold text-brand-400">Foundation</td>
+                                            <td>Clear technical blueprint, backlog, data model, security direction, and staging setup.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-lg text-center border-r border-white/10">3 to 4</td>
+                                            <td class="font-semibold text-accent-400">Web and APIs</td>
+                                            <td>Usable web staging build, connected workflows, and early operational dashboard.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-lg text-center border-r border-white/10">5 to 6</td>
+                                            <td class="font-semibold text-brand-400">Mobile app</td>
+                                            <td>Runnable Flutter alpha with core authentication and reusable product components.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-lg text-center border-r border-white/10">7 to 8</td>
+                                            <td class="font-semibold text-accent-400">Release readiness</td>
+                                            <td>Tested ecosystem, monitoring baseline, deployment checklist, and handover documentation.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 p-4 border-l-4 border-brand-500 bg-brand-500/10 rounded-r-lg text-xs md:text-sm">
+                                <h3 class="font-bold uppercase tracking-wider mb-1 opacity-70">Plain-language interpretation</h3>
+                                <p class="mb-0">The first month proves the product direction and system structure. The second month connects, validates, stabilizes, and prepares the ecosystem for controlled release.</p>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Meetings Policy",
+                        html: `
+                            <h2>Meetings and Notes Policy</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <table class="doc-table min-w-[600px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-1/4">Meeting</th>
+                                            <th class="w-1/3">Preferred Time</th>
+                                            <th>What the CEO Should Expect</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-semibold">Sprint setup</td>
+                                            <td class="text-slate-400">Sunday 17:00 to 17:30</td>
+                                            <td>Sprint goal, assumptions, blockers, and planned outputs.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold">Technical review</td>
+                                            <td class="text-slate-400">Tuesday 21:00 to 21:30</td>
+                                            <td>Progress summary, defects, validation results, and next actions.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-semibold">Planning alignment</td>
+                                            <td class="text-slate-400">Thursday 10:00 to 11:00</td>
+                                            <td>Priority decisions, timeline impact, risk updates, and approvals needed.</td>
+                                        </tr>
+                                        <tr class="bg-white/5 border-t-2 border-white/10">
+                                            <td class="font-semibold text-brand-400">Client meeting</td>
+                                            <td class="text-slate-400">Tue 19:00 - 20:00 <br>or Thu 13:00 - 15:00</td>
+                                            <td>Client needs, accepted requirements, open questions, and follow-up owners.</td>
+                                        </tr>
+                                        <tr class="bg-red-500/5">
+                                            <td class="font-semibold text-red-400">Emergency call</td>
+                                            <td class="text-red-400">Off-day<br>20-minute window only</td>
+                                            <td>Trigger, decision, time spent, and whether Saturday replacement is needed.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 p-3 text-center rounded-lg border border-white/10 text-xs">
+                                <i class="ph ph-warning-circle text-brand-400 mr-2"></i>
+                                <strong>Rule:</strong> Every meeting should end with written notes: decisions, owners, deadlines, risks, and impact on scope.
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Reporting Metrics",
+                        html: `
+                            <h2>Progress Reporting Metrics</h2>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+                                <div class="stat-card">
+                                    <div class="stat-value text-white text-xl sm:text-2xl">3</div>
+                                    <div class="font-bold text-xs mb-1">Active Days / Week</div>
+                                    <div class="text-[10px] opacity-70">Sunday, Tuesday, Thursday</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value text-xl sm:text-2xl">85%+</div>
+                                    <div class="font-bold text-xs mb-1">Sprint Completion</div>
+                                    <div class="text-[10px] opacity-70">Completed or formally re-scoped</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value text-accent-400 text-xl sm:text-2xl">95%+</div>
+                                    <div class="font-bold text-xs mb-1">Build Reliability</div>
+                                    <div class="text-[10px] opacity-70">Successful CI checks</div>
+                                </div>
+                            </div>
+                            <ul class="space-y-2.5 max-w-2xl mx-auto text-xs md:text-sm">
+                                <li class="flex items-start gap-3"><i class="ph ph-trend-up text-brand-400 text-lg"></i> <div><strong>Delivery velocity</strong> shows whether the plan is realistic.</div></li>
+                                <li class="flex items-start gap-3"><i class="ph ph-shield-check text-green-400 text-lg"></i> <div><strong>Quality metrics</strong> show whether the product is becoming more stable.</div></li>
+                                <li class="flex items-start gap-3"><i class="ph ph-lightning text-yellow-400 text-lg"></i> <div><strong>Performance metrics</strong> show whether the system can scale responsibly.</div></li>
+                                <li class="flex items-start gap-3"><i class="ph ph-warning text-red-400 text-lg"></i> <div><strong>Risk metrics</strong> show what decisions or resources are needed from leadership.</div></li>
+                            </ul>
+                        `
+                    },
+                    {
+                        title: "Risk View",
+                        html: `
+                            <h2>Risk View for Leadership</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <table class="doc-table min-w-[600px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-1/3">Risk</th>
+                                            <th class="w-1/6">Level</th>
+                                            <th>Mitigation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-medium">Sick day or emergency</td>
+                                            <td><span class="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-500 font-bold">Medium</span></td>
+                                            <td>Use Saturday replacement only if sprint-critical, otherwise re-scope transparently.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Client urgency outside schedule</td>
+                                            <td><span class="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-500 font-bold">Medium</span></td>
+                                            <td>Use the 20-minute off-day call window and defer work to the next active day.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Scope changes</td>
+                                            <td><span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-500 font-bold">High</span></td>
+                                            <td>Add to backlog, evaluate impact, and replace lower-priority work only by decision.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Infrastructure cost overrun</td>
+                                            <td><span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-500 font-bold">High</span></td>
+                                            <td>Treat as external cost and require budget approval before use.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Approval delays</td>
+                                            <td><span class="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-500 font-bold">Medium</span></td>
+                                            <td>Continue non-blocked tasks and record pending decisions in meeting notes.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "External Costs",
+                        html: `
+                            <h2>External Costs Not Included</h2>
+                            <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4 md:p-5 mb-4 text-xs md:text-sm">
+                                <h3 class="font-bold text-red-400 mb-1.5 flex items-center gap-2"><i class="ph ph-money text-lg"></i> Important commercial point</h3>
+                                <p class="mb-0">External operational expenses are not included in the delivery agreement. They must be provided separately before activation, upgrade, or scale-up.</p>
+                            </div>
+                            
+                            <h3 class="font-semibold mb-2 text-xs md:text-sm">Examples include:</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-xs md:text-sm">
+                                <div class="bg-white/5 p-3 rounded-lg flex items-start gap-2.5">
+                                    <i class="ph ph-hard-drives text-brand-400 text-lg mt-0.5 shrink-0"></i>
+                                    <span>Server rentals, cloud hosting, managed databases, and storage</span>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg flex items-start gap-2.5">
+                                    <i class="ph ph-plugs-connected text-accent-400 text-lg mt-0.5 shrink-0"></i>
+                                    <span>Paid APIs, domain services, deployment tools, and monitoring subscriptions</span>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg flex items-start gap-2.5 sm:col-span-2">
+                                    <i class="ph ph-cpu text-purple-400 text-lg mt-0.5 shrink-0"></i>
+                                    <span>AI compute, model inference, GPU usage, vector databases, and third-party SaaS tools</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3.5 border-l-4 border-yellow-500 bg-yellow-500/10 rounded-r-lg text-xs">
+                                <strong>Decision needed:</strong> The CEO or designated budget owner must approve and provision these costs separately.
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Future Client Policy",
+                        html: `
+                            <h2>Future Client & Subsidiary Project Policy</h2>
+                            <p class="text-[11px] md:text-xs opacity-70 mb-4 italic">Important scope clarification: This policy is not for the core POM development roadmap. It applies only to future subsidiaries, client projects, or external commercial projects connected to the POM ecosystem.</p>
+                            
+                            <ul class="space-y-3 text-xs md:text-sm list-none pl-0">
+                                <li class="bg-white/5 p-3.5 rounded-lg flex gap-3.5 items-center">
+                                    <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0 text-brand-400 font-bold text-xs">1</div>
+                                    <div>Any future client project requires <strong>20,000 EGP</strong> down payment before work starts.</div>
+                                </li>
+                                <li class="bg-white/5 p-3.5 rounded-lg flex gap-3.5 items-center">
+                                    <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0 text-brand-400 font-bold text-xs">2</div>
+                                    <div>At delivery, an additional <strong>20%</strong> of the total project cost is due.</div>
+                                </li>
+                                <li class="bg-white/5 p-3.5 rounded-lg flex gap-3.5 items-center">
+                                    <div class="w-8 h-8 rounded-full bg-accent-500/20 flex items-center justify-center shrink-0 text-accent-400 font-bold text-xs">3</div>
+                                    <div>A single client project below 20,000 EGP will <strong>not be accepted alone.</strong></div>
+                                </li>
+                                <li class="bg-white/5 p-3.5 rounded-lg flex gap-3.5 items-center">
+                                    <div class="w-8 h-8 rounded-full bg-accent-500/20 flex items-center justify-center shrink-0 text-accent-400 font-bold text-xs">4</div>
+                                    <div>Smaller projects can be grouped as a batch, but the total batch must be at least <strong>30,000 EGP.</strong></div>
+                                </li>
+                            </ul>
+                        `
+                    },
+                    {
+                        title: "CEO Decisions",
+                        html: `
+                            <h2>What the CEO Needs to Decide</h2>
+                            <p class="text-xs opacity-70 mb-4">Click directly on these check boxes to select priorities. You can also execute a verified digital signing of all choices.</p>
+                            <div class="space-y-2 mt-4 pl-3 border-l-2 border-brand-500 text-xs md:text-sm" id="page-decisions-list">
+                                <!-- Generated Dynamically -->
+                            </div>
+                            <div class="mt-6 flex justify-center">
+                                <button onclick="openSignOffModal()" class="glass-btn px-6 py-3 rounded-xl bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/40 text-xs font-bold flex items-center gap-2">
+                                    <i class="ph ph-signature text-base"></i> Execute Certified Boardroom Agreement
+                                </button>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "Acknowledgment",
+                        html: `
+                            <div class="flex flex-col items-center justify-center text-center h-full min-h-[50vh] px-4">
+                                <h2>Final Acknowledgment</h2>
+                                <p class="max-w-lg mb-6 mt-2 text-sm md:text-base">
+                                    This presentation summarizes the operational schedule and delivery controls for the POM technical roadmap in non-technical business terms.
+                                </p>
+                                <div class="bg-white/5 border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-md relative overflow-hidden">
+                                    <div class="absolute -right-4 -bottom-4 opacity-[0.02]"><i class="ph ph-pen-nib text-9xl"></i></div>
+                                    <p class="text-[10px] uppercase tracking-widest opacity-50 mb-3">Digitally acknowledged and signed by</p>
+                                    <div class="font-display text-2xl md:text-3xl text-brand-400 mb-1 italic" style="font-family: 'Brush Script MT', cursive;" id="page-signed-signature">Sherif Rashwan</div>
+                                    <div class="font-bold border-t border-white/10 pt-2 mt-2 text-xs md:text-sm" id="page-signed-name">Sherif Rashwan</div>
+                                    <div class="text-[10px] opacity-60 mt-0.5">Signature Date: June 2026</div>
+                                    
+                                    <div id="verified-stamp" class="hidden mt-4 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-green-500/25 border border-green-500/40 text-green-400 text-[10px] font-bold uppercase tracking-wider">
+                                        <i class="ph ph-seal-check text-xs"></i> Verified CEO Authorization Approved
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    }
+                ]
+            },
+            schedule: {
+                title: "Flexible Technical Delivery Schedule & Roadmap",
+                pages: [
+                    {
+                        title: "1. Availability Schedule",
+                        html: `
+                            <h1>Spiral Development & Sprint Reporting Plan</h1>
+                            <p class="text-sm md:text-base opacity-80 mb-4">2-Month Spiral Development Plan, Sprint Cadence, and Reporting Framework for POM Digital Ecosystem.</p>
+                            
+                            <h2>1. Primary Availability Schedule</h2>
+                            <p class="text-xs md:text-sm">This schedule is intentionally designed around a one-day-on / one-day-off delivery rhythm with controlled stochasticity. Friday is excluded from the active work schedule.</p>
+                            
+                            <div class="overflow-x-auto rounded-lg border border-white/10 text-xs md:text-sm">
+                                <table class="doc-table min-w-[600px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Availability</th>
+                                            <th>Status</th>
+                                            <th>Delivery Intent</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Sunday</td><td>17:00 - 22:00 Remote</td><td>Active</td><td>Sprint setup, backlog review, architecture notes.</td></tr>
+                                        <tr><td>Monday</td><td>Off (Calls 18:00-18:20)</td><td>Off</td><td>No planned delivery; urgent calls only.</td></tr>
+                                        <tr><td>Tuesday</td><td>17:00 - 22:00 Remote</td><td>Active</td><td>Backend/API implementation, validation.</td></tr>
+                                        <tr><td>Wednesday</td><td>Off (Calls 18:00-18:20)</td><td>Off</td><td>No planned delivery.</td></tr>
+                                        <tr><td>Thursday</td><td>10:00 - 17:00 Hybrid</td><td>Active</td><td>Sprint planning, solution review, client meetings.</td></tr>
+                                        <tr><td class="text-red-400">Friday</td><td>Unavailable</td><td>No Work</td><td>Fully excluded from planned execution.</td></tr>
+                                        <tr><td>Saturday</td><td>Off / Backup</td><td>Backup</td><td>Replaces missed active day for emergencies only.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "2. Operating Blocks",
+                        html: `
+                            <h2>1.2 Active-Day Operating Blocks</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <table class="doc-table min-w-[500px] md:min-w-full">
+                                    <thead>
+                                        <tr>
+                                            <th>Block</th>
+                                            <th>Time Allocation</th>
+                                            <th>Expected Output</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-bold text-brand-400">Planning & Triage</td>
+                                            <td>20-30 mins</td>
+                                            <td>Confirm sprint objective, identify blockers, update priorities.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-accent-400">Deep Implementation</td>
+                                            <td>2-4 hours</td>
+                                            <td>Execute code, DevOps, or docs with minimal context switching.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-green-400">Validation Pass</td>
+                                            <td>30-60 mins</td>
+                                            <td>Run checks, verify acceptance criteria.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-bold text-purple-400">Reporting Note</td>
+                                            <td>10-20 mins</td>
+                                            <td>Summarize completed work, risks, next actions.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <h2>1.3 Client Meeting Windows</h2>
+                            <ul class="mb-4 text-xs md:text-sm">
+                                <li><strong>Tue 19:00 - 20:00:</strong> remote client discovery/review.</li>
+                                <li><strong>Thu 13:00 - 15:00:</strong> hybrid/on-site workshop or demo.</li>
+                                <li><strong>Sun 20:00 - 20:30:</strong> short pre-sprint clarification (rare).</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        title: "3. Target Architecture",
+                        html: `
+                            <h2>3. Target Ecosystem Architecture</h2>
+                            
+                            <div class="flex flex-col items-center gap-2 py-4 text-xs">
+                                <!-- Client Layer -->
+                                <div class="text-center w-full">
+                                    <div class="text-[10px] uppercase tracking-widest mb-1 opacity-50 font-bold">Client Layer</div>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-brand-400">
+                                            <div class="font-bold">Web App</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Responsive UI</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-brand-400">
+                                            <div class="font-bold">Mobile App</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Flutter iOS/Android</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-brand-400">
+                                            <div class="font-bold">Admin Views</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Ops Dashboard</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <i class="ph ph-arrow-down text-lg opacity-40 my-1"></i>
+                                
+                                <!-- API Layer -->
+                                <div class="text-center w-full">
+                                    <div class="text-[10px] uppercase tracking-widest mb-1 opacity-50 font-bold">API & Service Layer</div>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-accent-400">
+                                            <div class="font-bold">Auth</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">JWT/OAuth2</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-accent-400">
+                                            <div class="font-bold">Core APIs</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Ecosystem Workflows</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-accent-400">
+                                            <div class="font-bold">Realtime</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Notification Events</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <i class="ph ph-arrow-down text-lg opacity-40 my-1"></i>
+
+                                <!-- Infrastructure Layer -->
+                                <div class="text-center w-full">
+                                    <div class="text-[10px] uppercase tracking-widest mb-1 opacity-50 font-bold">Data & Infrastructure Layer</div>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-purple-400">
+                                            <div class="font-bold">Database</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Models & Indexes</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-purple-400">
+                                            <div class="font-bold">Cache</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Performance Layer</div>
+                                        </div>
+                                        <div class="bg-white/5 p-3 rounded-xl w-36 text-center border-t-2 border-purple-400">
+                                            <div class="font-bold">CI/CD</div>
+                                            <div class="text-[10px] opacity-70 mt-0.5">Automation Pipeline</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "4. Meeting Notes & Spiral Plan",
+                        html: `
+                            <h2>4. Meeting Notes Framework</h2>
+                            <p class="mb-3 text-xs md:text-sm">Every planned meeting must produce a concise written note. Stored with sprint artifacts.</p>
+                            <div class="overflow-x-auto rounded-lg border border-white/10 text-xs md:text-sm">
+                                <table class="doc-table min-w-[500px] md:min-w-full">
+                                    <thead>
+                                        <tr><th>Meeting Type</th><th>Time</th><th>Required Notes</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Sprint Setup</td><td>Sun 17:00</td><td>Sprint goal, backlog, assumptions, expected artifacts.</td></tr>
+                                        <tr><td>Technical Review</td><td>Tue 21:00</td><td>Completed work, defects, integration risks.</td></tr>
+                                        <tr><td>Planning Alignment</td><td>Thu 10:00</td><td>Priority decisions, scope changes, timeline impact.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h2>5. 2-Month Spiral Engineering Roadmap</h2>
+                            <div class="space-y-3 mt-3 text-xs md:text-sm">
+                                <div class="bg-white/5 p-3 rounded-lg border-l-4 border-l-gray-400">
+                                    <h3 class="font-bold text-brand-400">Spiral I: Foundation (Weeks 1-2)</h3>
+                                    <p class="text-xs mt-1 opacity-80">Sprint 1A & Sprint 1B. Exit: architecture diagram, staging-ready repo, baseline API contract.</p>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg border-l-4 border-l-brand-400">
+                                    <h3 class="font-bold text-brand-400">Spiral II: Web & APIs (Weeks 3-4)</h3>
+                                    <p class="text-xs mt-1 opacity-80">Sprint 2A & Sprint 2B. Exit: Staging web build, connected flows, performance baseline.</p>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg border-l-4 border-l-accent-400">
+                                    <h3 class="font-bold text-brand-400">Spiral III: Mobile (Weeks 5-6)</h3>
+                                    <p class="text-xs mt-1 opacity-80">Sprint 3A & Sprint 3B. Exit: Runnable mobile alpha, connected auth, reusable UI.</p>
+                                </div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "5. Gates & Reporting",
+                        html: `
+                            <h2>6. Deliverables, Milestones & Gates</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10 text-xs md:text-sm">
+                                <table class="doc-table min-w-[500px] md:min-w-full">
+                                    <thead>
+                                        <tr><th>Gate</th><th>Timing</th><th>Acceptance Criteria</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td class="font-bold text-brand-400">G1</td><td>End Week 2</td><td>Architecture reviewed; staging foundation operational.</td></tr>
+                                        <tr><td class="font-bold text-brand-400">G2</td><td>End Week 4</td><td>Priority flows usable; API failures handled; baseline metrics.</td></tr>
+                                        <tr><td class="font-bold text-brand-400">G3</td><td>End Week 6</td><td>Alpha runs on target devices; session handling verified.</td></tr>
+                                        <tr><td class="font-bold text-brand-400">G4</td><td>End Week 8</td><td>E2E validation passed; deployment path documented; rollback ready.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h2>7. Reporting Statistics & KPIs</h2>
+                            <div class="overflow-x-auto rounded-lg border border-white/10 text-xs md:text-sm">
+                                <table class="doc-table min-w-[500px] md:min-w-full">
+                                    <thead>
+                                        <tr><th>Metric Category</th><th>Tracked Indicators</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td class="font-bold text-accent-400">Delivery Velocity</td><td>Planned vs. completed tasks; spillover ratio; blocked items.</td></tr>
+                                        <tr><td class="font-bold text-accent-400">Quality</td><td>Defect count; reopened issues; test pass rate.</td></tr>
+                                        <tr><td class="font-bold text-accent-400">Performance</td><td>API latency; page-load baseline; db query timing.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        title: "6. Commercial & Governance",
+                        html: `
+                            <h2>8. External Costs & Commercial Policy</h2>
+                            <div class="bg-red-500/10 p-3 rounded border border-red-500/30 mb-4 text-xs">
+                                <h3 class="font-bold text-red-400 mb-1">External Resources Provisioning</h3>
+                                <p class="opacity-80">Agreement covers dev/planning within schedule. Does NOT include: Server rents, cloud hosting, DBs, Paid APIs, domains, AI compute, subscriptions. Must be provisioned by CEO/Budget owner prior to use.</p>
+                            </div>
+
+                            <div class="bg-white/5 p-4 rounded mb-4 text-xs">
+                                <h3 class="font-bold text-brand-400 mb-1">Future Client & Subsidiary Work</h3>
+                                <ul class="list-disc pl-5 space-y-1 opacity-90">
+                                    <li>20,000 EGP down payment before work starts.</li>
+                                    <li>20% success fee on delivery.</li>
+                                    <li>Minimum engagement: 20k alone, or batched to 30k EGP.</li>
+                                </ul>
+                            </div>
+
+                            <h2>Governance & Risk Control</h2>
+                            <ul class="text-xs list-disc pl-5 space-y-1">
+                                <li><strong>Backlog control:</strong> All new scope enters backlog, receives priority.</li>
+                                <li><strong>Change control:</strong> Scope adjustments accepted only if they preserve release readiness.</li>
+                                <li><strong>Definition of done:</strong> Work complete only when implementation, validation, and docs are updated.</li>
+                            </ul>
+                            
+                            <div class="mt-4 pt-3 border-t border-white/10 text-xs">
+                                <p class="text-[10px] opacity-50 uppercase mb-1">Digitally signed by</p>
+                                <p class="font-bold text-brand-400">Sherif Rashwan <span class="text-white opacity-50 text-[10px] ml-2 font-normal">June 2026</span></p>
+                            </div>
+                        `
+                    }
+                ]
+            }
+        };
+
+        // --- DOM Elements ---
+        const pageContent = document.getElementById('page-content');
+        const pageNum = document.getElementById('page-num');
+        const pageTotal = document.getElementById('page-total');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const currentDocTitle = document.getElementById('current-doc-title');
+        const tocList = document.getElementById('toc-list');
+        const readProgress = document.getElementById('read-progress');
+        const viewerScrollArea = document.getElementById('viewer-scroll-area');
+        
+        // Mobile Sidebar Controls
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        const appSidebar = document.getElementById('app-sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+        // --- Core Logic ---
+        function switchDocument(docId) {
+            state.currentDocId = docId;
+            state.currentPageIndex = 0;
+            
+            // Update Navigation Menu Active styling
+            document.getElementById('btn-doc-presentation').classList.remove('active-doc');
+            document.getElementById('btn-doc-schedule').classList.remove('active-doc');
+            document.getElementById(`btn-doc-${docId}`).classList.add('active-doc');
+            
+            toggleMobileSidebar(false);
+            renderTOC();
+            renderPage();
+        }
+
+        function changePage(delta) {
+            const doc = documents[state.currentDocId];
+            const newIndex = state.currentPageIndex + delta;
+            
+            if (newIndex >= 0 && newIndex < doc.pages.length) {
+                state.currentPageIndex = newIndex;
+                renderPage();
+            }
+        }
+
+        function goToPage(index) {
+            state.currentPageIndex = index;
+            toggleMobileSidebar(false);
+            renderPage();
+        }
+
+        function renderTOC() {
+            const doc = documents[state.currentDocId];
+            tocList.innerHTML = '';
+            
+            doc.pages.forEach((page, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <button onclick="goToPage(${index})" class="w-full text-left flex items-center gap-2 hover:text-brand-400 transition-colors py-1 ${index === state.currentPageIndex ? 'text-brand-400 font-semibold' : 'opacity-70'}">
+                        <span class="text-[9px] w-4">${index + 1}.</span>
+                        <span class="truncate">${page.title}</span>
+                    </button>
+                `;
+                tocList.appendChild(li);
+            });
+        }
+
+        function renderPage() {
+            const doc = documents[state.currentDocId];
+            const page = doc.pages[state.currentPageIndex];
+            
+            pageContent.classList.remove('animate-fade');
+            void pageContent.offsetWidth; // trigger reflow
+            pageContent.classList.add('animate-fade');
+            
+            pageContent.innerHTML = page.html;
+            currentDocTitle.innerText = doc.title;
+            pageNum.innerText = state.currentPageIndex + 1;
+            pageTotal.innerText = doc.pages.length;
+            
+            btnPrev.disabled = state.currentPageIndex === 0;
+            btnNext.disabled = state.currentPageIndex === doc.pages.length - 1;
+            
+            // Render reader progress bar
+            const progress = ((state.currentPageIndex + 1) / doc.pages.length) * 100;
+            readProgress.style.width = `${progress}%`;
+            
+            // Refresh TOC indicators
+            renderTOC();
+
+            // Populate page dynamic interactions
+            if (state.currentDocId === 'presentation' && state.currentPageIndex === 11) {
+                renderDecisionsPageMarkup();
+            }
+            if (state.currentDocId === 'presentation' && state.currentPageIndex === 12) {
+                renderSignatureAcknowledgeBlock();
+            }
+
+            viewerScrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Mobile Sidebar Drawer Actions
+        function toggleMobileSidebar(open) {
+            state.sidebarOpen = open;
+            if (open) {
+                appSidebar.classList.remove('-translate-x-full');
+                sidebarBackdrop.classList.remove('hidden');
+                setTimeout(() => sidebarBackdrop.classList.remove('opacity-0'), 50);
+            } else {
+                appSidebar.classList.add('-translate-x-full');
+                sidebarBackdrop.classList.add('opacity-0');
+                setTimeout(() => sidebarBackdrop.classList.add('hidden'), 300);
+            }
+        }
+
+        mobileMenuToggle.addEventListener('click', () => toggleMobileSidebar(!state.sidebarOpen));
+
+        // Mobile Navigation Touch Gestures
+        let touchstartX = 0;
+        let touchendX = 0;
+
+        viewerScrollArea.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        viewerScrollArea.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            handleGesture();
+        }, { passive: true });
+
+        function handleGesture() {
+            // Ignore small movements
+            if (Math.abs(touchendX - touchstartX) < 60) return;
+            
+            if (touchendX < touchstartX) {
+                // Swiped Left -> Load next page
+                changePage(1);
+            }
+            if (touchendX > touchstartX) {
+                // Swiped Right -> Load previous page
+                changePage(-1);
+            }
+        }
+
+        // --- Theme Toggle Controls ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlElement = document.documentElement;
+        
+        themeToggle.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            initCanvas(); // Redraw particles to contrast appropriately
+        });
+
+        // --- Interactive CEO Decisions Configuration ---
+        function toggleDecisionState(index) {
+            state.decisions[index] = !state.decisions[index];
+            
+            // Sync current dynamic list view
+            const checkboxEl = document.getElementById(`decision-chk-${index}`);
+            if (checkboxEl) checkboxEl.checked = state.decisions[index];
+            
+            const modalCheckboxEl = document.getElementById(`modal-decision-chk-${index}`);
+            if (modalCheckboxEl) modalCheckboxEl.checked = state.decisions[index];
+        }
+
+        function renderDecisionsPageMarkup() {
+            const listContainer = document.getElementById('page-decisions-list');
+            if (!listContainer) return;
+
+            listContainer.innerHTML = '';
+            decisionTexts.forEach((text, index) => {
+                const checkedAttr = state.decisions[index] ? 'checked' : '';
+                const item = document.createElement('label');
+                item.className = 'flex items-start gap-3 cursor-pointer p-2 hover:bg-white/5 rounded-lg transition-all';
+                item.innerHTML = `
+                    <input type="checkbox" id="decision-chk-${index}" onchange="toggleDecisionState(${index})" ${checkedAttr} class="w-5 h-5 mt-0.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-transparent shrink-0">
+                    <span class="leading-relaxed">${index + 1}. ${text}</span>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function renderSignatureAcknowledgeBlock() {
+            const signatureEl = document.getElementById('page-signed-signature');
+            const nameEl = document.getElementById('page-signed-name');
+            const stampEl = document.getElementById('verified-stamp');
+
+            if (state.isSigned) {
+                signatureEl.innerText = state.ceoSignature;
+                nameEl.innerText = `${state.ceoSignature} (CEO, ${state.organization})`;
+                stampEl.classList.remove('hidden');
+            } else {
+                signatureEl.innerText = 'Sherif Rashwan';
+                nameEl.innerText = 'Sherif Rashwan';
+                stampEl.classList.add('hidden');
+            }
+        }
+
+        // --- CEO Sign-Off Modal Mechanics ---
+        function openSignOffModal() {
+            const modal = document.getElementById('signoff-modal');
+            const modalDecisionsList = document.getElementById('modal-decisions-list');
+            
+            // Render decision checklist inside verification center
+            modalDecisionsList.innerHTML = '';
+            decisionTexts.forEach((text, index) => {
+                const checkedAttr = state.decisions[index] ? 'checked' : '';
+                const item = document.createElement('label');
+                item.className = 'flex items-start gap-3 cursor-pointer p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-xs text-slate-300';
+                item.innerHTML = `
+                    <input type="checkbox" id="modal-decision-chk-${index}" onchange="toggleDecisionState(${index})" ${checkedAttr} class="w-4 h-4 mt-0.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-transparent shrink-0">
+                    <span class="leading-normal">${text}</span>
+                `;
+                modalDecisionsList.appendChild(item);
+            });
+
+            // Pre-fill signature values
+            document.getElementById('input-ceo-sig').value = state.ceoSignature;
+            document.getElementById('input-ceo-org').value = state.organization;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 50);
+        }
+
+        function closeSignOffModal() {
+            const modal = document.getElementById('signoff-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            
+            // Hide potential verification alerts
+            document.getElementById('signoff-validation-msg').classList.add('hidden');
+        }
+
+        function processDigitalSignature() {
+            const sigName = document.getElementById('input-ceo-sig').value.trim();
+            const orgName = document.getElementById('input-ceo-org').value.trim();
+            const validationMsg = document.getElementById('signoff-validation-msg');
+
+            // Verify that all 7 items are approved
+            const allApproved = state.decisions.every(d => d === true);
+            if (!allApproved || !sigName) {
+                validationMsg.classList.remove('hidden');
+                return;
+            }
+
+            validationMsg.classList.add('hidden');
+
+            // Apply verification variables
+            state.ceoSignature = sigName;
+            state.organization = orgName;
+            state.signedAt = new Date().toLocaleString();
+            state.isSigned = true;
+
+            // Generate Verification Security Code
+            const securityHash = 'POM-AUTH-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+            // Setup custom printing context elements
+            document.getElementById('print-organization-label').innerText = orgName;
+            document.getElementById('print-verification-hash').innerText = securityHash;
+            document.getElementById('print-signature-cursive').innerText = sigName;
+            document.getElementById('print-signature-name').innerText = sigName + ' (Chief Executive Officer)';
+            document.getElementById('print-timestamp-val').innerText = state.signedAt;
+
+            const printDecisionsContainer = document.getElementById('print-decisions-outcome');
+            printDecisionsContainer.innerHTML = '';
+            decisionTexts.forEach((text) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>APPROVED & CONFIRMED:</strong> ${text}`;
+                printDecisionsContainer.appendChild(li);
+            });
+
+            closeSignOffModal();
+            renderPage(); // Reload visual metrics
+
+            // Prompt print/save system
+            setTimeout(() => {
+                window.print();
+            }, 350);
+        }
+
+        // --- Canvas Particle Field Animation ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationFrameId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.radius = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+
+            draw(isDark) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.15)';
+                ctx.fill();
+            }
+        }
+
+        function initCanvas() {
+            resizeCanvas();
+            particles = [];
+            const numParticles = Math.floor(window.innerWidth / 25);
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            const isDark = htmlElement.classList.contains('dark');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw(isDark);
+            });
+
+            // Draw interactive constellation connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 110) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = isDark ? `rgba(99, 102, 241, ${0.12 * (1 - distance/110)})` : `rgba(99, 102, 241, ${0.05 * (1 - distance/110)})`;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initCanvas();
+        });
+
+        // --- Initialize Document Viewer ---
+        window.onload = () => {
+            initCanvas();
+            animate();
+            switchDocument('presentation');
+        };
+
+        // Desktop keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') changePage(1);
+            if (e.key === 'ArrowLeft') changePage(-1);
+        });
+
+    </script>
+</body>
+</html>
